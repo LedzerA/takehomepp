@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .price {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      #paypal-button-container {
+        text-align: center;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="price">Camisa do Flamengo: $349,90</div>
+      <div id="paypal-button-container"></div>
+    </div>
+
+    <script src="https://www.paypal.com/sdk/js?client-id=AdYPuZ-y7i1w6a_LUw564oOl54X54Evj1SNsSf84qli18kYqSLVc_BZXGL2SpCl8YVjuovr4Ka_mrS2C&currency=USD"></script>
+    <script>
+      paypal
+        .Buttons({
+          createOrder: function () {
+            return fetch("/my-server/create-paypal-order", {
+              method: "post",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                cart: [
+                  {
+                    sku: "YOUR_PRODUCT_STOCK_KEEPING_UNIT",
+                    quantity: "YOUR_PRODUCT_QUANTITY",
+                  },
+                ],
+              }),
+            })
+              .then((response) => response.json())
+              .then((order) => order.id);
+          },
+          onApprove: function (data) {
+            return fetch("/my-server/capture-paypal-order", {
+              method: "post",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                orderID: data.orderID,
+              }),
+            })
+              .then((response) => response.json())
+              .then((orderData) => {
+                console.log(
+                  "Capture result",
+                  orderData,
+                  JSON.stringify(orderData, null, 2)
+                );
+                const transaction =
+                  orderData.purchase_units[0].payments.captures[0];
+                alert(
+                  "Transaction " +
+                    transaction.status +
+                    ": " +
+                    transaction.id +
+                    "\n\nSee console for all available details"
+                );
+              });
+          },
+        })
+        .render("#paypal-button-container");
+    </script>
+  </body>
+</html>
